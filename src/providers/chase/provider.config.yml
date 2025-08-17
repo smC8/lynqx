@@ -1,0 +1,13 @@
+name: chase
+capabilities:
+  payments: true
+  account-info: true
+baseUrl: "https://api.sandbox.chase.example"
+auth:
+  type: oauth2
+  tokenUrl: "https://auth.sandbox.chase.example/token"
+mappings:
+  payments:
+    request: "./payments/request-mapper.ts"
+    response: "./payments/response-mapper.ts"
+    error: "./payments/error-mapper.ts"

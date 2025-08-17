@@ -1,0 +1,7 @@
+tenantId: tenantA
+providers:
+  chase:
+    clientId: "tenantA-chase-client"
+    clientSecret: "tenantA-secret"
+    headers:
+      x-custom: "tenantA"
