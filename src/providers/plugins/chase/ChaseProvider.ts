@@ -1,6 +1,6 @@
 // src/providers/chase/ChaseProvider.ts
 import axios, { AxiosError } from "axios";
-import { IProviderPlugin, CanonicalRequest, CanonicalResponse, ProviderError } from "../../types/provider";
+import { IProviderPlugin, CanonicalRequest, CanonicalResponse, ProviderError } from "../../../types/provider";
 
 interface ChaseTenantConfig {
   baseUrl: string;

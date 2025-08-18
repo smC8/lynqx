@@ -7,6 +7,7 @@ export class ErrorMapper {
     const payload: CanonicalErrorPayload = {
       code: 'ERR_PROVIDER_UNKNOWN',
       message: err.message || 'Provider error',
+    //   httpStatus: err.statusCode || 502,
       httpStatus: err.statusCode || 502,
       provider: err.providerName,
       details: err.raw,

@@ -22,7 +22,7 @@ export class AccountInfoService implements IAccountInfoService {
     }
 
     try {
-      return await provider.fetchAccountDetails(tenantId, payload);
+      return await provider.fetchAccountDetails(tenantId, providerName, payload.accountId);
     } catch (err) {
       throw err;
     }

@@ -1,7 +1,8 @@
-import { IProvider } from "./IProvider";
+// import { IProvider } from "./IProvider";
+// import { CanonicalPaymentRequest, CanonicalPaymentResponse } from '../../domains/payments/interfaces/IPaymentProvider'
 
-export interface IPaymentProvider extends IProvider {
-  // Accept canonical payment request and return canonical response
-  createPayment?(tenantId: string, request: any, ctx?: any): Promise<any>;
-  getPaymentStatus?(tenantId: string, paymentId: string, ctx?: any): Promise<any>;
-}
+// export interface IPaymentProvider extends IProvider {
+// //   // Accept canonical payment request and return canonical response  
+//   createPayment(request: CanonicalPaymentRequest): Promise<CanonicalPaymentResponse>;
+//   getPaymentStatus(paymentId: string): Promise<CanonicalPaymentResponse>;
+// }

@@ -15,10 +15,28 @@
 //     Object.setPrototypeOf(this, new.target.prototype);
 //   }
 // }
-export type CanonicalError = {
-  code: string; // machine code e.g. ERR_RATE_LIMIT
-  message: string; // human message
+
+export type CanonicalErrorPayload = {
+  code: string;
+  message: string;
+  httpStatus: number;
   provider?: string;
-  httpStatus?: number;
   details?: any;
 };
+
+export class CanonicalError extends Error {
+  code: string;
+  httpStatus: number;
+  provider?: string;
+  details?: any;
+
+  constructor(payload: CanonicalErrorPayload) {
+    super(payload.message);
+    this.code = payload.code;
+    this.httpStatus = payload.httpStatus;
+    this.provider = payload.provider;
+    this.details = payload.details;
+  }
+}
+
+

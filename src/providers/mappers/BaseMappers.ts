@@ -21,7 +21,8 @@ export class NoopResponseMapper implements IResponseMapper {
 
 export class NoopErrorMapper implements IErrorMapper {
   toCanonical(err: any): CanonicalError {
-    return {
+      return {
+        name: "", // TODO -  Fix this placeholder name
       code: err?.code || "ERR_PROVIDER",
       message: err?.message || "Provider error",
       httpStatus: err?.status || 502,

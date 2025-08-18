@@ -10,6 +10,7 @@ export function errorMiddleware(err: any, req: Request, res: Response, next: Nex
   } else {
     // Fallback
     canonical = {
+      name: "", // TODO -  Fix this placeholder name
       code: "ERR_INTERNAL",
       message: err?.message ?? "Internal server error",
       httpStatus: err?.status || 500,

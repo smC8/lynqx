@@ -1,5 +1,6 @@
-import { TenantId } from '../../common/types';
-import { ProviderError } from '../../common/errors/ProviderError';
+import { TenantId } from '../../../common/types'; //'../../common/types';
+
+// import { ProviderError } from '../../common/errors/ProviderError'; //use this somewhere
 
 export type CanonicalPaymentRequest = {
   amount: number;
@@ -18,7 +19,9 @@ export type CanonicalPaymentResponse = {
 
 export interface IPaymentProvider {
   // initialize provider with tenant-specific config
-  init(tenantId: TenantId, tenantConfig: Record<string, any>): Promise<void>;
+  // tenant-aware init (optional for your providers, but wrapper will call if present)    
+  init?(tenantId: TenantId, tenantConfig: Record<string, any>): Promise<void>; // TODO - Making this optional breaks PaymentProviderWrapper.ts
+//   init(tenantId: TenantId, tenantConfig: Record<string, any>): Promise<void>;
 
   // make payment
   makePayment(request: CanonicalPaymentRequest): Promise<CanonicalPaymentResponse>;
