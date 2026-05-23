@@ -1,0 +1,58 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "next-devtools": {
+      "command": "npx",
+      "args": ["-y", "next-devtools-mcp@latest"]
+    },
+    "zigflow": {
+      "type": "sse",
+      "url": "http://localhost:9080/mcp/zig/sse"
+    },
+    "temporal": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "TEMPORAL_HOST",
+        "-e", "TEMPORAL_NAMESPACE",
+        "-e", "TEMPORAL_TLS_ENABLED",
+        "mcp/temporal"
+      ],
+      "env": {
+        "TEMPORAL_HOST": "localhost:7233",
+        "TEMPORAL_NAMESPACE": "default",
+        "TEMPORAL_TLS_ENABLED": "false"
+      }
+    },
+    "keycloak": {
+      "command": "npx",
+      "args": ["keycloak-mcp-server"],
+      "env": {
+        "KEYCLOAK_URL": "https://iam-uat2.cateina.com",
+        "KEYCLOAK_ADMIN": "44CUkb3xAU3hxqT5",
+        "KEYCLOAK_ADMIN_PASSWORD": "Pf1N7wskGseQKliE5H6nv2ns4n47cuQN"
+      }
+    },
+    "apisix-mcp": {
+      "command": "node",
+      "args": [
+        "/Users/ulysses/Projects/node-projects/lynqx/lynqx-ui/node_modules/apisix-mcp/dist/index.js"
+      ],
+      "env": {
+        "APISIX_SERVER_HOST": "https://api.cateina.com",
+        "APISIX_SERVER_PORT": "443",
+        "APISIX_ADMIN_API_PORT": "443",
+        "APISIX_ADMIN_API_PREFIX": "/apisix/admin",
+        "APISIX_ADMIN_KEY": "46262806b7fde31c5f1e47d09a86e12f"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    }
+  }
+}
+

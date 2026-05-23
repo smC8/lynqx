@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lynqx Console — Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="lynqx-tokens.css" />
+<link rel="stylesheet" href="styles.css" />
+<style>
+  @media print {
+    @page { size: A3 landscape; margin: 8mm; }
+    html, body { background: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .app-shell { height: auto !important; overflow: visible !important; display: block !important; }
+    .app-main  { display: block !important; }
+    .app-canvas{ overflow: visible !important; height: auto !important; }
+    /* Hide the in-page tweaks panel and any sticky FABs */
+    [data-tweaks-panel], .tweaks-panel, [class*="tweaks"] { display: none !important; }
+    /* Sidebar — keep but don't let it fix the page height */
+    aside { height: auto !important; min-height: 0 !important; }
+    /* Avoid clipping cards */
+    .surface, .kpi, table, tr, .slide-up { break-inside: avoid; page-break-inside: avoid; }
+    .slide-up { animation: none !important; opacity: 1 !important; transform: none !important; }
+    /* Header sticky off */
+    header { position: static !important; }
+  }
+  @media screen {
+    /* Visual hint that this is the print view */
+    body::before {
+      content: "Print preview · use ⌘P / Ctrl+P to save as PDF";
+      position: fixed; top: 8px; left: 50%; transform: translateX(-50%);
+      background: #1A1F1A; color: #9FE870; font-family: ui-monospace, monospace;
+      font-size: 11px; letter-spacing: 0.4px; padding: 6px 12px; border-radius: 999px;
+      z-index: 9999; pointer-events: none;
+    }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="tweaks-panel.jsx"></script>
+<script type="text/babel" src="icons.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="shell.jsx"></script>
+<script type="text/babel" src="screens-a.jsx"></script>
+<script type="text/babel" src="screens-b.jsx"></script>
+<script type="text/babel" src="screens-c.jsx"></script>
+
+<script type="text/babel" data-presets="react">
+// React hooks accessed as React.* to avoid global-scope collisions across babel scripts
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "persona": "exec",
+  "density": "comfortable",
+  "sidebarCollapsed": false,
+  "accent": {
+    "value": "mint",
+    "color": "#7BD3A0"
+  },
+  "screen": "overview"
+}/*EDITMODE-END*/;
+
+function App() {
+  const [t, setTweak] = window.useTweaks(TWEAK_DEFAULTS);
+  const [cmdkOpen, setCmdkOpen] = React.useState(false);
+  const data = window.SAMPLE_DATA;
+
+  React.useEffect(() => {
+    document.documentElement.setAttribute('data-theme', t.theme);
+    document.documentElement.setAttribute('data-density', t.density);
+    document.documentElement.setAttribute('data-accent', t.accent);
+  }, [t.theme, t.density, t.accent]);
+
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); setCmdkOpen(o => !o); }
+      else if (e.key === 'Escape') setCmdkOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
+  React.useEffect(() => {
+    const def = t.persona === 'bank' ? 'customers' : t.persona === 'dev' ? 'devconsole' : 'overview';
+    const validForPersona = window.NAV_BY_PERSONA[t.persona].some(n => n.id === t.screen);
+    if (!validForPersona) setTweak('screen', def);
+  }, [t.persona]);
+
+  const screen = t.screen;
+  const screenLabels = {
+    overview: 'Overview', marketplace: 'Marketplace', accountlink: 'Link account',
+    settings: 'Settings', devconsole: 'API & integrations', customers: 'Customers',
+    accounts: 'Accounts', transactions: 'Transactions', statements: 'Statements',
+    team: 'Team', channels: 'Channels', incidents: 'Incidents',
+    logs: 'Request logs', webhooks: 'Webhooks', docs: 'API docs',
+  };
+  const breadcrumbs = { exec: 'Indus Treasury', bank: 'HDFC · Lynqx Hub', dev: 'Lattice Pay' };
+
+  return (
+    <div className="app-shell" data-screen-label={`Lynqx · ${t.persona} · ${screen}`}>
+      <window.Sidebar
+        persona={t.persona}
+        workspaces={data.workspaces}
+        currentWs={t.persona}
+        setCurrentWs={(p) => setTweak('persona', p)}
+        route={screen}
+        setRoute={(s) => setTweak('screen', s)}
+        collapsed={t.sidebarCollapsed}
+      />
+
+      <main className="app-main">
+        <window.Header
+          persona={t.persona}
+          title={screenLabels[screen] || screen}
+          breadcrumb={breadcrumbs[t.persona]}
+          theme={t.theme}
+          setTheme={(v) => setTweak('theme', v)}
+          onCmdK={() => setCmdkOpen(true)}
+          onToggleSidebar={() => setTweak('sidebarCollapsed', !t.sidebarCollapsed)}
+        />
+        <div className="app-canvas">
+          {screen === 'overview'     && <window.OverviewScreen    persona={t.persona} data={data} />}
+          {screen === 'marketplace'  && <window.MarketplaceScreen data={data} onScreen={(s) => setTweak('screen', s)} />}
+          {screen === 'accountlink'  && <window.AccountLinkScreen data={data} />}
+          {screen === 'settings'     && <window.SettingsScreen    data={data} />}
+          {screen === 'devconsole'   && <window.DevConsoleScreen  data={data} />}
+          {screen === 'customers'    && <window.BankCustomersScreen data={data} />}
+          {screen === 'accounts'     && <window.AccountsScreen     data={data} />}
+          {screen === 'transactions' && <window.TransactionsScreen data={data} />}
+          {screen === 'statements'   && <window.StatementsScreen   data={data} />}
+          {screen === 'team'         && <window.TeamScreen         data={data} />}
+          {screen === 'channels'     && <window.ChannelsScreen     data={data} />}
+          {screen === 'incidents'    && <window.IncidentsScreen    data={data} />}
+          {screen === 'logs'         && <window.LogsScreen         data={data} />}
+          {screen === 'webhooks'     && <window.WebhooksScreen     data={data} />}
+          {screen === 'docs'         && <window.DocsScreen         data={data} />}
+        </div>
+      </main>
+
+      <window.CommandPalette
+        open={cmdkOpen}
+        onClose={() => setCmdkOpen(false)}
+        onNavigate={(s) => { setTweak('screen', s); setCmdkOpen(false); }}
+        persona={t.persona}
+        theme={t.theme}
+        setTheme={(v) => setTweak('theme', v)}
+        setPersona={(p) => setTweak('persona', p)}
+      />
+
+      <window.TweaksPanel title="Tweaks">
+        <window.TweakSection title="Theme">
+          <window.TweakRadio  label="Mode"     value={t.theme}            options={[{value:'light',label:'Light'},{value:'dark',label:'Dark'}]} onChange={v => setTweak('theme', v)} />
+          <window.TweakColor  label="Accent"   value={t.accent}           options={[{value:'lime',color:'#9FE870'},{value:'mint',color:'#7BD3A0'},{value:'sky',color:'#7AB8FF'},{value:'mono',color:'#1A1F1A'}]} onChange={v => setTweak('accent', v)} />
+        </window.TweakSection>
+        <window.TweakSection title="Workspace">
+          <window.TweakSelect label="Persona"  value={t.persona}          options={[{value:'exec',label:'Executive · Treasury'},{value:'bank',label:'Bank operator'},{value:'dev',label:'Developer'}]} onChange={v => setTweak('persona', v)} />
+          <window.TweakRadio  label="Density"  value={t.density}          options={[{value:'comfortable',label:'Comfortable'},{value:'compact',label:'Compact'}]} onChange={v => setTweak('density', v)} />
+          <window.TweakToggle label="Collapse sidebar" value={t.sidebarCollapsed} onChange={v => setTweak('sidebarCollapsed', v)} />
+        </window.TweakSection>
+        <window.TweakSection title="Demo">
+          <window.TweakButton label="Open ⌘K palette" onClick={() => setCmdkOpen(true)} />
+        </window.TweakSection>
+      </window.TweaksPanel>
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App />);
+
+// Auto-print once fonts + layout settle
+(async () => {
+  try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch {}
+  await new Promise(r => setTimeout(r, 700));
+  window.print();
+})();
+</script>
+</body>
+</html>
