@@ -5,13 +5,10 @@ import { useCopilotAction, useCopilotChat, useCopilotAdditionalInstructions } fr
 import { TextMessage, Role } from "@copilotkit/runtime-client-gql";
 import { Icon } from "@/components/shell/Icons";
 import PromptLine from "./PromptLine";
-import AgentCard from "./AgentCard";
-import MiniStat from "./MiniStat";
 import ArchitectureStrip from "./ArchitectureStrip";
 import GenericStubCard from "./GenericStubCard";
 import { COPILOT_BY_PERSONA, PERSONA_COPY } from "@/lib/personas";
 import type { WorkspaceId } from "@/lib/types";
-import AgentStatePanel from "./AgentStatePanel";
 
 // GenUI card registry — resolved by cardType string
 import TreasuryPosition from "./genui/exec/TreasuryPosition";
@@ -24,7 +21,7 @@ import APIExplorer from "./genui/dev/APIExplorer";
 import StressTester from "./genui/dev/StressTester";
 import WebhookDebug from "./genui/dev/WebhookDebug";
 
-const CARD_REGISTRY: Record<string, React.ComponentType> = {
+const CARD_REGISTRY: Record<string, React.ComponentType<{ summary?: string; workflowId?: string }>> = {
   TreasuryPosition,
   PaymentInitiation,
   CashForecast,
@@ -36,11 +33,24 @@ const CARD_REGISTRY: Record<string, React.ComponentType> = {
   WebhookDebug,
 };
 
+async function startInvestigation(query: string, cardType: string): Promise<string | undefined> {
+  try {
+    const res = await fetch("/api/agent/start", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ workflowType: "copilot-investigation", input: { query, cardType } }),
+    }).then(r => r.json()) as { workflowId?: string };
+    return res.workflowId;
+  } catch { return undefined; }
+}
+
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 interface FeedItem {
   q: string;
   cardType: string;
+  summary?: string;
+  workflowId?: string;
 }
 
 interface Props {
@@ -67,43 +77,19 @@ export default function CopilotScreen({ persona }: Props) {
       `Always respond by calling a render tool that matches the user query — never reply with plain text.`,
   }, [persona]);
 
-  // T047-T055 — register all 9 GenUI render actions
-  useCopilotAction({ name: "renderTreasuryPosition", description: "Show treasury position: net USD balance, FX exposure, idle cash across accounts", parameters: [{ name: "summary", type: "string", description: "Position summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "TreasuryPosition" }]); } });
-  useCopilotAction({ name: "renderPaymentInitiation", description: "Show a payment initiation card with beneficiary, amount, debit account, and approval chain", parameters: [{ name: "summary", type: "string", description: "Payment summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "PaymentInitiation" }]); } });
-  useCopilotAction({ name: "renderCashForecast", description: "Show 30-day cash forecast with baseline, stress scenario, and floor line", parameters: [{ name: "summary", type: "string", description: "Forecast summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "CashForecast" }]); } });
-  useCopilotAction({ name: "renderBankDiagnostic", description: "Diagnose bank connectivity or batch failure with step trace and suggested patch", parameters: [{ name: "summary", type: "string", description: "Diagnostic summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "BankDiagnostic" }]); } });
-  useCopilotAction({ name: "renderProtocolDrift", description: "Show protocol drift between registered and observed schema for a bank partner", parameters: [{ name: "summary", type: "string", description: "Drift summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "ProtocolDrift" }]); } });
-  useCopilotAction({ name: "renderSLAIntelligence", description: "Show customer payment failure rates and SLA health ranked by failure percentage", parameters: [{ name: "summary", type: "string", description: "SLA summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "SLAIntelligence" }]); } });
-  useCopilotAction({ name: "renderAPIExplorer", description: "Show API usage examples with curl and SDK code samples for a payment integration", parameters: [{ name: "summary", type: "string", description: "API description" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "APIExplorer" }]); } });
-  useCopilotAction({ name: "renderStressTester", description: "Show stress test results with RPS chart, failure stats, and failure modes table", parameters: [{ name: "summary", type: "string", description: "Stress test summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "StressTester" }]); } });
-  useCopilotAction({ name: "renderWebhookDebug", description: "Debug webhook delivery failures with pipeline trace and nginx config fix", parameters: [{ name: "summary", type: "string", description: "Webhook issue summary" }], handler: async () => { setFeed(f => [...f, { q: lastQueryRef.current, cardType: "WebhookDebug" }]); } });
+  // T047-T055 — register all 9 GenUI render actions; summary from LLM replaces the card's hardcoded description
+  useCopilotAction({ name: "renderTreasuryPosition", description: "Show treasury position: net USD balance, FX exposure, idle cash across accounts", parameters: [{ name: "summary", type: "string", description: "1-2 sentence contextual summary of the position" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "TreasuryPosition"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "TreasuryPosition", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderPaymentInitiation", description: "Show a payment initiation card with beneficiary, amount, debit account, and approval chain", parameters: [{ name: "summary", type: "string", description: "1-2 sentence description of what payment is being initiated" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "PaymentInitiation"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "PaymentInitiation", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderCashForecast", description: "Show 30-day cash forecast with baseline, stress scenario, and floor line", parameters: [{ name: "summary", type: "string", description: "1-2 sentence forecast insight including any stress scenario applied" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "CashForecast"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "CashForecast", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderBankDiagnostic", description: "Diagnose bank connectivity or batch failure, or show API health breakdown", parameters: [{ name: "summary", type: "string", description: "Root cause analysis or diagnostic finding in 1-2 sentences" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "BankDiagnostic"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "BankDiagnostic", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderProtocolDrift", description: "Show protocol drift between registered and observed schema for a bank partner", parameters: [{ name: "summary", type: "string", description: "1-2 sentence description of what changed and impact" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "ProtocolDrift"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "ProtocolDrift", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderSLAIntelligence", description: "Show customer payment failure rates and SLA health ranked by failure percentage", parameters: [{ name: "summary", type: "string", description: "1-2 sentence SLA health summary highlighting worst offenders" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "SLAIntelligence"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "SLAIntelligence", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderAPIExplorer", description: "Show API usage examples with curl and SDK code samples for a payment integration", parameters: [{ name: "summary", type: "string", description: "1-2 sentence description of what the code sample demonstrates" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "APIExplorer"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "APIExplorer", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderStressTester", description: "Show stress test results with RPS chart, failure stats, and failure modes table", parameters: [{ name: "summary", type: "string", description: "Key finding from the stress test in 1-2 sentences" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "StressTester"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "StressTester", summary, workflowId }]); } });
+  useCopilotAction({ name: "renderWebhookDebug", description: "Debug webhook delivery failures with pipeline trace and suggested fix", parameters: [{ name: "summary", type: "string", description: "Root cause and impact of the webhook failure in 1-2 sentences" }], handler: async (args) => { const { summary } = args as { summary?: string }; const workflowId = await startInvestigation(lastQueryRef.current, "WebhookDebug"); setFeed(f => [...f, { q: lastQueryRef.current, cardType: "WebhookDebug", summary, workflowId }]); } });
 
-  // T063 — Zigflow investigation action
-  useCopilotAction({
-    name: "runInvestigation",
-    description: "Run a deep investigation using Zigflow/Temporal: query SigNoz observability data, analyze with Claude, and optionally create a Jira ticket",
-    parameters: [
-      { name: "query", type: "string", description: "Natural language investigation query" },
-      { name: "services", type: "string", description: "Comma-separated service names to filter (optional)" },
-      { name: "createTicket", type: "boolean", description: "Whether to create a Jira ticket (optional)" },
-    ],
-    handler: async (args) => {
-      const res = await fetch("/api/agent/start", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          workflowType: "copilot-investigation",
-          input: {
-            query: (args as { query?: string }).query ?? lastQueryRef.current,
-            services: (args as { services?: string }).services?.split(",").map(s => s.trim()).filter(Boolean),
-            createTicket: (args as { createTicket?: boolean }).createTicket ?? false,
-          },
-        }),
-      }).then(r => r.json()) as { workflowId?: string };
-      const workflowId = res.workflowId ?? "unknown";
-      setFeed(f => [...f, { q: lastQueryRef.current, cardType: `investigation:${workflowId}` }]);
-    },
-  });
+  // runInvestigation is available programmatically via the "Investigate deeper" button on cards,
+  // but not exposed as an LLM tool — prevents the model from bypassing visual render tools.
 
   useEffect(() => {
     if (thinkingTimerRef.current) {
@@ -311,36 +297,11 @@ export default function CopilotScreen({ persona }: Props) {
           </div>
         )}
         {[...feed].reverse().map((item, i) => {
-          // T063/T064: investigation cards embed AgentStatePanel
-          if (item.cardType.startsWith("investigation:")) {
-            const workflowId = item.cardType.replace("investigation:", "");
-            return (
-              <div key={i}>
-                <PromptLine text={item.q} />
-                <div
-                  style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--border-strong)",
-                    borderRadius: "var(--r-xl)",
-                    boxShadow: "var(--shadow-md)",
-                    padding: 16,
-                    marginBottom: 24,
-                  }}
-                >
-                  <div className="eyebrow" style={{ marginBottom: 12, color: "var(--lime-dk)" }}>
-                    <Icon.Branch size={11} style={{ marginRight: 4, verticalAlign: -1 }} />
-                    Zigflow investigation · Temporal
-                  </div>
-                  <AgentStatePanel workflowId={workflowId} />
-                </div>
-              </div>
-            );
-          }
           const CardComp = CARD_REGISTRY[item.cardType];
           return (
             <div key={i}>
               <PromptLine text={item.q} />
-              {CardComp ? <CardComp /> : <GenericStubCard query={item.q} />}
+              {CardComp ? <CardComp summary={item.summary} workflowId={item.workflowId} /> : <GenericStubCard query={item.q} />}
             </div>
           );
         })}

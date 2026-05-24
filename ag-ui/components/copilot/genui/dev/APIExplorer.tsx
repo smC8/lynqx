@@ -1,18 +1,27 @@
+"use client";
 import AgentCard from "@/components/copilot/AgentCard";
+import CardSkeleton from "@/components/copilot/CardSkeleton";
+import { useWorkflowResult } from "@/lib/useWorkflowResult";
+import type { APIExplorerData } from "@/lib/card-types";
 import { Icon } from "@/components/shell/Icons";
 
-const LANGS = ["curl", "TypeScript", "Python", "Go"];
+interface Props { summary?: string; workflowId?: string }
 
-export default function APIExplorer() {
+export default function APIExplorer({ summary, workflowId }: Props) {
+  const wf = useWorkflowResult(workflowId);
+  const data = wf.cardData as APIExplorerData | undefined;
+  const isLoading = wf.status === "running" || (!!workflowId && wf.status === "idle");
+  const effectiveSummary = wf.summary ?? summary;
+
+  const steps = data?.steps ?? [];
+  const scopes = data?.scopes ?? [];
+  const endpoint = data?.endpoint ?? "";
+  const description = data?.description ?? "";
+
   return (
     <AgentCard
-      summary={
-        <>
-          Here is a runnable sample for bulk SEPA. Resolves the NetSuite customer record, batches up to 1,000
-          instructions per call, and uses idempotency keys so retries are safe.
-        </>
-      }
-      sources="Lynqx API v1 · NetSuite bundle 4.2"
+      summary={isLoading ? (summary ?? "Querying observability data…") : effectiveSummary}
+      sources="Lynqx API · live"
       footerActions={
         <>
           <button className="btn btn-primary btn-sm">
@@ -25,40 +34,41 @@ export default function APIExplorer() {
         </>
       }
     >
-      <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-        {LANGS.map((l, i) => (
-          <button key={l} className={`btn btn-sm ${i === 0 ? "btn-secondary" : "btn-ghost"}`} style={{ fontSize: 11.5 }}>
-            {l}
-          </button>
-        ))}
-      </div>
-      <div className="code-block">
-        <div><span className="tk-cmt"># 1. Fetch NetSuite vendor record (Lynqx normalises across ERPs)</span></div>
-        <div><span className="tk-fn">curl</span> -X GET https://api.lynqx.io/<span className="tk-key">v1</span>/erp/netsuite/vendors/<span className="tk-str">"V-2041"</span> \</div>
-        <div>{"  "}-H <span className="tk-str">"Authorization: Bearer $LYNQX_KEY"</span></div>
-        <div></div>
-        <div><span className="tk-cmt"># 2. Submit a SEPA bulk batch (idempotent, up to 1k items)</span></div>
-        <div><span className="tk-fn">curl</span> -X POST https://api.lynqx.io/<span className="tk-key">v1</span>/payments/bulk \</div>
-        <div>{"  "}-H <span className="tk-str">"Authorization: Bearer $LYNQX_KEY"</span> \</div>
-        <div>{"  "}-H <span className="tk-str">"Idempotency-Key: $(uuidgen)"</span> \</div>
-        <div>{"  "}-d <span className="tk-str">&apos;{"{"}</span></div>
-        <div>{"    "}<span className="tk-key">&quot;rail&quot;</span>: <span className="tk-str">&quot;SEPA&quot;</span>,</div>
-        <div>{"    "}<span className="tk-key">&quot;debtor_account&quot;</span>: <span className="tk-str">&quot;acc_8821&quot;</span>,</div>
-        <div>{"    "}<span className="tk-key">&quot;instructions&quot;</span>: [{"{"}</div>
-        <div>{"      "}<span className="tk-key">&quot;creditor_ref&quot;</span>: <span className="tk-str">&quot;V-2041&quot;</span>,</div>
-        <div>{"      "}<span className="tk-key">&quot;amount&quot;</span>: <span className="tk-num">12400</span>, <span className="tk-key">&quot;ccy&quot;</span>: <span className="tk-str">&quot;EUR&quot;</span></div>
-        <div>{"    "}{"}"}]</div>
-        <div>{"  "}<span className="tk-str">{"}"}&apos;</span></div>
-        <div></div>
-        <div><span className="tk-cmt"># → returns batch_id; events stream via webhook payments.bulk.settled</span></div>
-      </div>
-
-      <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
-        <span className="tag tag-info">payments:write</span>
-        <span className="tag tag-info">erp:read</span>
-        <span className="tag tag-neutral">sandbox.lynqx.io</span>
-        <span className="tag tag-success"><span className="dot dot-live" />8 webhooks listening</span>
-      </div>
+      {isLoading ? <CardSkeleton rows={4} /> : (
+        <>
+          {steps.length === 0 ? (
+            <div className="body" style={{ color: "var(--fg-3)", padding: "12px 0" }}>No API explorer data found for this query.</div>
+          ) : (
+            <>
+              {endpoint && (
+                <div style={{ marginBottom: 10 }}>
+                  <span className="tag tag-info" style={{ fontSize: 11.5, marginRight: 8 }}>{endpoint}</span>
+                  {description && <span className="body" style={{ fontSize: 12.5 }}>{description}</span>}
+                </div>
+              )}
+              <div className="code-block">
+                {steps.map((step, i) => (
+                  <div key={i}>
+                    {step.comment && (
+                      <div><span className="tk-cmt"># {step.comment}</span></div>
+                    )}
+                    <div style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{step.code}</div>
+                    {i < steps.length - 1 && <div style={{ height: 8 }} />}
+                  </div>
+                ))}
+              </div>
+              {scopes.length > 0 && (
+                <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+                  {scopes.map((s, i) => (
+                    <span key={i} className="tag tag-info">{s}</span>
+                  ))}
+                  <span className="tag tag-neutral">sandbox.lynqx.io</span>
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
     </AgentCard>
   );
 }
