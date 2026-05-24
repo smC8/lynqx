@@ -1,0 +1,272 @@
+/* ============================================================
+   LYNQX — Colors & Type Foundations
+   Headless corporate banking connectivity for emerging markets
+   ============================================================ */
+
+:root {
+  /* ────────────────────────────────────────────────
+     CORE PALETTE — Navy + Lime (primary brand pair)
+     ──────────────────────────────────────────────── */
+
+  /* Lime — the "live signal" / accent / hero band
+     WCAG contrast: #9FE870 on #1A1A4E = 7.1:1 (passes AA + AAA for normal text)
+     Computed via https://webaim.org/resources/contrastchecker/ */
+  --lynqx-lime:        #9FE870;
+  --lynqx-lime-dk:     #7FCC50;
+  --lynqx-lime-soft:   #D4FF80;   /* code / highlight */
+
+  /* Forest / Navy Indigo — the structural anchor */
+  --lynqx-forest:      #1A1A4E;   /* primary brand navy */
+  --lynqx-forest-m:    #252578;   /* hover / mid */
+  --lynqx-forest-deep: #141E18;   /* deep code-panel bg */
+
+  /* Cream + Mints — soft surface tints, used for full-bleed bands */
+  --lynqx-cream:       #F2F2FA;   /* default page bg */
+  --lynqx-mint:        #D0D0F8;   /* lavender mint band */
+  --lynqx-aqua:        #C0C8FF;   /* aqua-violet band */
+  --lynqx-white:       #FFFFFF;
+
+  /* Neutrals */
+  --lynqx-muted:       #4A4A70;   /* body secondary */
+  --lynqx-border:      rgba(26, 26, 78, 0.12);
+  --lynqx-border-soft: rgba(26, 26, 78, 0.06);
+  --lynqx-overlay:     rgba(26, 26, 78, 0.08);
+
+  /* Status / semantic — used inside product chrome (txn badges, dots) */
+  --lynqx-sent-bg:     #D8D8FF;
+  --lynqx-sent-fg:     #2A2A8A;
+  --lynqx-rcvd-bg:     #D0D8FF;
+  --lynqx-rcvd-fg:     #1A1A6A;
+  --lynqx-pend-bg:     #FFF3CC;
+  --lynqx-pend-fg:     #7A5500;
+  --lynqx-success:     #27C93F;
+  --lynqx-warn:        #FFBD2E;
+  --lynqx-error:       #FF6058;
+
+  /* Code-panel palette (for snippets) */
+  --lynqx-code-bg:     #1C2820;
+  --lynqx-code-chrome: #141E18;
+  --lynqx-code-str:    #90D090;
+  --lynqx-code-key:    #A8D8EA;
+  --lynqx-code-num:    #FFD580;
+  --lynqx-code-dim:    rgba(255,255,255,.25);
+
+  /* ────────────────────────────────────────────────
+     SEMANTIC TOKENS — use these in components
+     ──────────────────────────────────────────────── */
+  --bg-page:           var(--lynqx-cream);
+  --bg-surface:        var(--lynqx-white);
+  --bg-inverse:        var(--lynqx-forest);
+  --bg-accent:         var(--lynqx-lime);
+
+  --fg-1:              var(--lynqx-forest);   /* primary text */
+  --fg-2:              var(--lynqx-muted);    /* body / labels */
+  --fg-3:              rgba(26,26,78,.4);     /* tertiary / hints */
+  --fg-on-dark:        var(--lynqx-cream);
+  --fg-on-dark-2:      rgba(240,238,227,.55);
+  --fg-accent:         var(--lynqx-lime);     /* accent text on navy */
+
+  --border-1:          var(--lynqx-border);
+  --border-2:          var(--lynqx-border-soft);
+
+  /* ────────────────────────────────────────────────
+     TYPE — DM Sans (display + body) + DM Mono (technical)
+     ──────────────────────────────────────────────── */
+  --font-display:      'DM Sans', system-ui, sans-serif;
+  --font-body:         'DM Sans', system-ui, sans-serif;
+  --font-mono:         'DM Mono', ui-monospace, 'JetBrains Mono', monospace;
+
+  /* Weights */
+  --fw-regular:        400;
+  --fw-medium:         500;
+  --fw-semibold:       600;
+  --fw-bold:           700;
+
+  /* Type scale — fluid for hero, fixed for body */
+  --fs-h1:             clamp(44px, 5.5vw, 72px);
+  --fs-h2:             clamp(28px, 3.5vw, 44px);
+  --fs-h3:             24px;
+  --fs-h4:             18px;
+  --fs-body-lg:        18px;
+  --fs-body:           16px;
+  --fs-body-sm:        14px;
+  --fs-caption:        13px;
+  --fs-micro:          11px;
+  --fs-mono-sm:        12px;
+  --fs-mono-xs:        10px;
+
+  --lh-tight:          1.04;     /* h1 */
+  --lh-snug:           1.1;      /* h2 */
+  --lh-normal:         1.5;      /* body */
+  --lh-relaxed:        1.65;     /* hero sub */
+  --lh-loose:          1.7;      /* feature sub / step desc */
+
+  --tr-h1:             -2px;
+  --tr-h2:             -1.2px;
+  --tr-h3:             -.5px;
+  --tr-eyebrow:        2px;      /* uppercase eyebrows */
+  --tr-label:          1.5px;    /* mono labels */
+
+  /* ────────────────────────────────────────────────
+     SPACING — 4px base
+     ──────────────────────────────────────────────── */
+  --space-1:           4px;
+  --space-2:           8px;
+  --space-3:           12px;
+  --space-4:           16px;
+  --space-5:           20px;
+  --space-6:           24px;
+  --space-8:           32px;
+  --space-10:          40px;
+  --space-12:          48px;
+  --space-16:          64px;
+  --space-20:          80px;
+  --space-24:          96px;
+
+  /* ────────────────────────────────────────────────
+     RADII
+     ──────────────────────────────────────────────── */
+  --radius-xs:         3px;       /* tiny chips inside product chrome */
+  --radius-sm:         5px;       /* sidebar nodes */
+  --radius-md:         8px;       /* small cards */
+  --radius-lg:         12px;      /* code panels */
+  --radius-xl:         16px;      /* feature cards */
+  --radius-2xl:        20px;      /* hero console */
+  --radius-pill:       999px;     /* buttons + badges */
+
+  /* ────────────────────────────────────────────────
+     SHADOWS
+     ──────────────────────────────────────────────── */
+  --shadow-sm:         0 4px 20px rgba(26,26,78,.10);
+  --shadow-md:         0 8px 32px rgba(26,26,78,.08);
+  --shadow-lg:         0 8px 32px rgba(26,26,78,.12);
+  --shadow-hero:       0 -4px 40px rgba(26,26,78,.15);
+
+  /* ────────────────────────────────────────────────
+     MOTION
+     ──────────────────────────────────────────────── */
+  --ease-std:          cubic-bezier(.4, 0, .2, 1);
+  --dur-fast:          150ms;
+  --dur-base:          200ms;
+  --dur-slow:          400ms;
+  --dur-pulse:         2s;        /* live-pulse beacons */
+
+  /* ────────────────────────────────────────────────
+     LAYOUT
+     ──────────────────────────────────────────────── */
+  --container:         1248px;
+  --gutter:            48px;
+  --gutter-sm:         24px;
+  --nav-h:             72px;
+}
+
+/* ============================================================
+   SEMANTIC TYPE CLASSES — drop on real elements
+   ============================================================ */
+
+.lx-h1 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h1);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--tr-h1);
+  color: var(--fg-1);
+}
+
+.lx-h2 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h2);
+  line-height: var(--lh-snug);
+  letter-spacing: var(--tr-h2);
+  color: var(--fg-1);
+}
+
+.lx-h3 {
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  font-size: var(--fs-h3);
+  line-height: 1.2;
+  letter-spacing: var(--tr-h3);
+  color: var(--fg-1);
+}
+
+.lx-body-lg {
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body-lg);
+  line-height: var(--lh-relaxed);
+  color: var(--fg-1);
+}
+
+.lx-body {
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg-1);
+}
+
+.lx-body-sm {
+  font-family: var(--font-body);
+  font-weight: var(--fw-regular);
+  font-size: var(--fs-body-sm);
+  line-height: var(--lh-loose);
+  color: var(--fg-2);
+}
+
+.lx-caption {
+  font-family: var(--font-body);
+  font-size: var(--fs-caption);
+  color: var(--fg-2);
+}
+
+/* Eyebrow — uppercase, tight tracking, used above section titles */
+.lx-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tr-eyebrow);
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+
+/* Mono micro-label — used for product chrome labels ("LIVE CONNECTION MAP") */
+.lx-mono-label {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tr-label);
+  text-transform: uppercase;
+  color: var(--fg-3);
+}
+
+.lx-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-sm);
+  color: var(--fg-1);
+}
+
+.lx-mono-sm {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  color: var(--fg-2);
+}
+
+/* ============================================================
+   RESET-LITE — light defaults; opt-in via class on body
+   ============================================================ */
+.lx-reset *, .lx-reset *::before, .lx-reset *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+.lx-reset {
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-normal);
+  color: var(--fg-1);
+  background: var(--bg-page);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}

@@ -1,2 +1,43 @@
+# Build output
 dist/
+build/
+out/
+.next/
+
+# Playwright MCP screenshots / snapshots
+.playwright-mcp/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Dependencies
 node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Archives
+*.zip
+*.tar.gz
+
+# ClickHouse / SigNoz runtime data (volume mounts — large, not source)
+lynqx-server/signoz/docker/clickhouse-setup/data/*/
+lynqx-server/signoz/docker-swarm/clickhouse-setup/data/*/
+
+# IDE
+.idea/
+*.iml
+.vscode/settings.json

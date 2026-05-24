@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "commonjs",
+    "outDir": ".worker-dist",
+    "noEmit": false
+  },
+  "include": ["worker/**/*"]
+}

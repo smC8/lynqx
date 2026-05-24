@@ -1,0 +1,187 @@
+document:
+  dsl: 1.0.0
+  taskQueue: copilot-agents
+  workflowType: copilot-investigation
+  version: 0.1.0
+  title: Copilot Investigation
+  summary: Query observability data from SigNoz, analyze with Claude, optionally create a Jira ticket
+  metadata:
+    activityOptions:
+      startToCloseTimeout:
+        minutes: 5
+
+input:
+  schema:
+    format: json
+    document:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: Natural language investigation task
+        timeRange:
+          type: object
+          properties:
+            start:
+              type: string
+            end:
+              type: string
+        services:
+          type: array
+          items:
+            type: string
+        createTicket:
+          type: boolean
+          default: false
+        sessionId:
+          type: string
+          description: CopilotKit session ID for state callbacks
+
+do:
+  - notifyStart:
+      call: http
+      with:
+        method: post
+        endpoint: ${ $env.APP_URL + "/api/agent/state-update" }
+        body:
+          workflowId: ${ $workflow.id }
+          step: "Querying observability data"
+          status: running
+          timestamp: ${ now | tostring }
+
+  - gatherData:
+      fork:
+        compete: false
+        branches:
+          - queryLogs:
+              call: http
+              with:
+                method: post
+                endpoint: ${ $env.SIGNOZ_API_URL + "/api/v3/query_range" }
+                headers:
+                  SIGNOZ-API-KEY: ${ $env.SIGNOZ_API_KEY }
+                  content-type: application/json
+                body:
+                  start: ${ ($input.timeRange.start // "now-1h") }
+                  end: ${ ($input.timeRange.end // "now") }
+                  step: 60
+                  variables: {}
+                  compositeQuery:
+                    queryType: builder
+                    panelType: list
+                    builderQueries:
+                      A:
+                        dataSource: logs
+                        queryName: A
+                        expression: A
+                        filters:
+                          items:
+                            - key:
+                                key: service.name
+                              op: in
+                              value: ${ ($input.services // []) }
+
+          - queryTraces:
+              call: http
+              with:
+                method: post
+                endpoint: ${ $env.SIGNOZ_API_URL + "/api/v3/query_range" }
+                headers:
+                  SIGNOZ-API-KEY: ${ $env.SIGNOZ_API_KEY }
+                  content-type: application/json
+                body:
+                  start: ${ ($input.timeRange.start // "now-1h") }
+                  end: ${ ($input.timeRange.end // "now") }
+                  step: 60
+                  compositeQuery:
+                    queryType: builder
+                    panelType: list
+                    builderQueries:
+                      A:
+                        dataSource: traces
+                        queryName: A
+                        expression: A
+                        filters:
+                          items:
+                            - key:
+                                key: service.name
+                              op: in
+                              value: ${ ($input.services // []) }
+
+  - notifyDataGathered:
+      call: http
+      with:
+        method: post
+        endpoint: ${ $env.APP_URL + "/api/agent/state-update" }
+        body:
+          workflowId: ${ $workflow.id }
+          step: "Querying observability data"
+          status: done
+          timestamp: ${ now | tostring }
+
+  - notifyAnalysis:
+      call: http
+      with:
+        method: post
+        endpoint: ${ $env.APP_URL + "/api/agent/state-update" }
+        body:
+          workflowId: ${ $workflow.id }
+          step: "Analyzing with Claude"
+          status: running
+          timestamp: ${ now | tostring }
+
+  - analyzeWithClaude:
+      call: http
+      with:
+        method: post
+        endpoint: https://api.anthropic.com/v1/messages
+        headers:
+          x-api-key: ${ $env.ANTHROPIC_API_KEY }
+          anthropic-version: "2023-06-01"
+          content-type: application/json
+        body:
+          model: claude-sonnet-4-6
+          max_tokens: 2048
+          messages:
+            - role: user
+              content: ${ "You are an expert payment infrastructure engineer. Analyze the following observability data and answer this question: " + $input.query + "\n\nLogs data: " + ($context.gatherData.queryLogs | tojson) + "\n\nTrace data: " + ($context.gatherData.queryTraces | tojson) + "\n\nProvide a concise summary (2-3 sentences) followed by specific findings." }
+
+  - notifyAnalysisDone:
+      call: http
+      with:
+        method: post
+        endpoint: ${ $env.APP_URL + "/api/agent/state-update" }
+        body:
+          workflowId: ${ $workflow.id }
+          step: "Analyzing with Claude"
+          status: done
+          timestamp: ${ now | tostring }
+
+  - emitResult:
+      export:
+        as:
+          result:
+            summary: ${ $data.analyzeWithClaude.content[0].text }
+            findings: []
+            observabilityData:
+              traceCount: ${ ($context.gatherData.queryTraces.data.result | length) // 0 }
+              errorRate: 0
+              services: ${ ($input.services // []) }
+              timeRange:
+                start: ${ ($input.timeRange.start // "now-1h") }
+                end: ${ ($input.timeRange.end // "now") }
+      set:
+        status: completed
+
+  - notifyDone:
+      call: http
+      with:
+        method: post
+        endpoint: ${ $env.APP_URL + "/api/agent/state-update" }
+        body:
+          workflowId: ${ $workflow.id }
+          step: "Complete"
+          status: done
+          timestamp: ${ now | tostring }
