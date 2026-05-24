@@ -3,7 +3,7 @@ import {
   copilotRuntimeNextJSAppRouterEndpoint,
 } from "@copilotkit/runtime";
 import { BuiltInAgent } from "@copilotkit/runtime/v2";
-import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
+import { createMistral } from "@ai-sdk/mistral";
 import { NextRequest } from "next/server";
 
 const SYSTEM_PROMPT = `You are Lynqx Copilot, an AI assistant embedded in the Lynqx corporate banking console.
@@ -28,11 +28,7 @@ DEFAULT: If the query involves any API, route, endpoint, or traffic data — use
 
 function buildRuntime() {
   if (process.env.MISTRAL_API_KEY) {
-    const mistral = createOpenAICompatible({
-      name: "mistral",
-      baseURL: "https://api.mistral.ai/v1",
-      apiKey: process.env.MISTRAL_API_KEY,
-    });
+    const mistral = createMistral({ apiKey: process.env.MISTRAL_API_KEY });
     return new CopilotRuntime({
       agents: {
         default: new BuiltInAgent({

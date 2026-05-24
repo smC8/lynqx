@@ -10,6 +10,7 @@
     "worker": "env $(grep -v '^#' .env | grep -v '^$' | xargs) ts-node --project tsconfig.worker.json worker/index.ts"
   },
   "dependencies": {
+    "@ai-sdk/mistral": "^3.0.37",
     "@anthropic-ai/sdk": "^0.57.0",
     "@copilotkit/react-core": "^1.57.4",
     "@copilotkit/react-ui": "^1.57.4",
