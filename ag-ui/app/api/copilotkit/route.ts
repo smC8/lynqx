@@ -1,10 +1,9 @@
 import {
   CopilotRuntime,
-  AnthropicAdapter,
-  GoogleGenerativeAIAdapter,
   copilotRuntimeNextJSAppRouterEndpoint,
 } from "@copilotkit/runtime";
-import Anthropic from "@anthropic-ai/sdk";
+import { BuiltInAgent } from "@copilotkit/runtime/v2";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { NextRequest } from "next/server";
 
 const SYSTEM_PROMPT = `You are Lynqx Copilot, an AI assistant embedded in the Lynqx corporate banking console.
@@ -27,17 +26,43 @@ Tool selection guide (pick the BEST match, default to renderBankDiagnostic if un
 
 DEFAULT: If the query involves any API, route, endpoint, or traffic data — use renderBankDiagnostic.`;
 
-function buildAdapter() {
-  if (process.env.ANTHROPIC_API_KEY) {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new AnthropicAdapter({ anthropic: anthropic as any, model: "claude-sonnet-4-6" });
+function buildRuntime() {
+  if (process.env.MISTRAL_API_KEY) {
+    const mistral = createOpenAICompatible({
+      name: "mistral",
+      baseURL: "https://api.mistral.ai/v1",
+      apiKey: process.env.MISTRAL_API_KEY,
+    });
+    return new CopilotRuntime({
+      agents: {
+        default: new BuiltInAgent({
+          model: mistral(process.env.MISTRAL_MODEL ?? "mistral-large-latest"),
+          prompt: SYSTEM_PROMPT,
+          forwardSystemMessages: true,
+        }),
+      },
+    });
   }
   if (process.env.GOOGLE_API_KEY) {
-    return new GoogleGenerativeAIAdapter({
-      apiKey: process.env.GOOGLE_API_KEY,
-      model: process.env.GOOGLE_MODEL ?? "gemini-2.5-flash",
-      apiVersion: "v1beta",
+    return new CopilotRuntime({
+      agents: {
+        default: new BuiltInAgent({
+          model: `google/${process.env.GOOGLE_MODEL ?? "gemini-2.5-flash"}`,
+          prompt: SYSTEM_PROMPT,
+          forwardSystemMessages: true,
+        }),
+      },
+    });
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    return new CopilotRuntime({
+      agents: {
+        default: new BuiltInAgent({
+          model: "anthropic/claude-sonnet-4-6",
+          prompt: SYSTEM_PROMPT,
+          forwardSystemMessages: true,
+        }),
+      },
     });
   }
   return null;
@@ -50,19 +75,17 @@ export const GET = async () => {
 };
 
 export const POST = async (req: NextRequest) => {
-  const adapter = buildAdapter();
+  const runtime = buildRuntime();
 
-  if (!adapter) {
+  if (!runtime) {
     return new Response(
-      JSON.stringify({ error: "No LLM API key set. Add GOOGLE_API_KEY or ANTHROPIC_API_KEY to .env.local" }),
+      JSON.stringify({ error: "No LLM API key set. Add MISTRAL_API_KEY, GOOGLE_API_KEY, or ANTHROPIC_API_KEY to .env" }),
       { status: 503, headers: { "content-type": "application/json" } }
     );
   }
 
-  const runtime = new CopilotRuntime();
   const { handleRequest } = copilotRuntimeNextJSAppRouterEndpoint({
     runtime,
-    serviceAdapter: adapter,
     endpoint: "/api/copilotkit",
   });
 
