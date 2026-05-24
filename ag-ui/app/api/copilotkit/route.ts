@@ -11,35 +11,34 @@ const SYSTEM_PROMPT = `You are Lynqx Copilot, an AI assistant embedded in the Ly
 Lynqx connects enterprises to banks across emerging markets via ISO 20022, SWIFT, and proprietary rails.
 
 CRITICAL RULE: You must ALWAYS respond by calling one of the render tools below. Never reply with plain text.
-Always pass a concise, insightful 1-2 sentence summary as the "summary" argument — this is displayed as the
-card headline. Make it specific to the user's query, not generic.
+There are NO exceptions — every user message must trigger exactly one tool call.
+Always pass a concise, insightful 1-2 sentence summary as the "summary" argument.
 
-Available render tools (choose the most relevant):
-- renderTreasuryPosition: net USD balance, FX exposure, idle cash — for any "position", "balance", "FX" query
-- renderPaymentInitiation: initiate or review a payment with approval chain — for "pay", "transfer", "invoice" queries
-- renderCashForecast: 30-day cash forecast with stress scenarios — for "forecast", "projection", "what-if" queries
-- renderBankDiagnostic: bank connectivity/batch failures AND API health/error analysis — for "error", "failure", "status codes", "diagnostic", "why is X failing" queries
-- renderProtocolDrift: registered vs observed schema differences — for "schema", "protocol", "drift", "mapping" queries
-- renderSLAIntelligence: customer failure rates and SLA health — for "SLA", "customer failures", "success rate" queries
-- renderAPIExplorer: API usage examples with curl/SDK code — for "how do I", "show me code", "API example" queries
-- renderStressTester: stress test results with RPS chart — for "load test", "stress test", "capacity", "throughput" queries
-- renderWebhookDebug: webhook delivery failures and fixes — for "webhook", "event not received", "listener" queries
+Tool selection guide (pick the BEST match, default to renderBankDiagnostic if unsure):
+- renderTreasuryPosition — "position", "balance", "FX", "exposure", "idle cash", "liquidity"
+- renderPaymentInitiation — "pay", "transfer", "send", "invoice", "wire", "remit"
+- renderCashForecast — "forecast", "projection", "30-day", "what-if", "scenario", "outlook"
+- renderBankDiagnostic — "error", "failure", "status codes", "diagnostic", "routes", "traffic", "usage", "requests", "API calls", "most used", "top endpoints", "throughput", "latency", "observability", "metrics", "breakdown", "response"
+- renderProtocolDrift — "schema", "protocol", "drift", "mapping", "ISO 20022", "pacs", "camt"
+- renderSLAIntelligence — "SLA", "customer failures", "success rate", "uptime", "availability"
+- renderAPIExplorer — "how do I", "show me code", "example", "curl", "SDK", "integrate"
+- renderStressTester — "load test", "stress test", "capacity", "concurrency", "performance test"
+- renderWebhookDebug — "webhook", "event not received", "listener", "delivery", "callback"
 
-When the user asks about API response statuses, error breakdowns, or observability data — use renderBankDiagnostic
-with a summary describing the error pattern found.`;
+DEFAULT: If the query involves any API, route, endpoint, or traffic data — use renderBankDiagnostic.`;
 
 function buildAdapter() {
+  if (process.env.ANTHROPIC_API_KEY) {
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return new AnthropicAdapter({ anthropic: anthropic as any, model: "claude-sonnet-4-6" });
+  }
   if (process.env.GOOGLE_API_KEY) {
     return new GoogleGenerativeAIAdapter({
       apiKey: process.env.GOOGLE_API_KEY,
       model: process.env.GOOGLE_MODEL ?? "gemini-2.5-flash",
       apiVersion: "v1beta",
     });
-  }
-  if (process.env.ANTHROPIC_API_KEY) {
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return new AnthropicAdapter({ anthropic: anthropic as any, model: "claude-sonnet-4-6" });
   }
   return null;
 }

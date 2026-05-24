@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "worker": "ts-node --project tsconfig.worker.json worker/index.ts"
+    "worker": "env $(grep -v '^#' .env | grep -v '^$' | xargs) ts-node --project tsconfig.worker.json worker/index.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",

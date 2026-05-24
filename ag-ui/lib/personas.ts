@@ -27,20 +27,7 @@ export const COPILOT_BY_PERSONA: Record<WorkspaceId, PersonaConfig> = {
       "Pay invoice INV-2041 to Tata Consulting, ₹12.4L from ICICI OpEx, approve by EOD",
       "30-day cash forecast if the Siemens payment delays by 2 weeks",
     ],
-    transcript: [
-      {
-        q: "What's our net USD position across HDFC and Citi as of this morning?",
-        cardType: "TreasuryPosition",
-      },
-      {
-        q: "Pay invoice INV-2041 to Tata Consulting, ₹12.4L from our ICICI OpEx account, approve by EOD",
-        cardType: "PaymentInitiation",
-      },
-      {
-        q: "30-day cash forecast — what if the Siemens payment delays by 2 weeks?",
-        cardType: "CashForecast",
-      },
-    ],
+    transcript: [],
     catalog: [
       {
         t: "Exception resolution desk",
@@ -67,20 +54,7 @@ export const COPILOT_BY_PERSONA: Record<WorkspaceId, PersonaConfig> = {
       "Diff today's ICICI pacs.002 against our registered schema",
       "Which enterprise customers have the highest payment failure rate this quarter?",
     ],
-    transcript: [
-      {
-        q: "Why did HDFC's SFTP batch fail last night?",
-        cardType: "BankDiagnostic",
-      },
-      {
-        q: "Diff today's ICICI pacs.002 against our registered schema",
-        cardType: "ProtocolDrift",
-      },
-      {
-        q: "Which of our customers have the highest payment failure rate this quarter?",
-        cardType: "SLAIntelligence",
-      },
-    ],
+    transcript: [],
     catalog: [
       {
         t: "Schema & onboarding copilot",
@@ -107,20 +81,7 @@ export const COPILOT_BY_PERSONA: Record<WorkspaceId, PersonaConfig> = {
       "Simulate 500 concurrent PAIN.001 submissions with 10% rejection rate",
       "Why aren't my payment status webhooks firing for Citi?",
     ],
-    transcript: [
-      {
-        q: "Show me how to initiate a bulk SEPA payment for a NetSuite customer",
-        cardType: "APIExplorer",
-      },
-      {
-        q: "Simulate 500 concurrent PAIN.001 submissions with 10% rejection rate",
-        cardType: "StressTester",
-      },
-      {
-        q: "Why aren't my payment status webhooks firing for Citi?",
-        cardType: "WebhookDebug",
-      },
-    ],
+    transcript: [],
     catalog: [
       {
         t: "Reconciliation app builder",
