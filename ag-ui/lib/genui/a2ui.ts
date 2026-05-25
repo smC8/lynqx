@@ -16,13 +16,14 @@ export type LynqxSpec = {
 // Recursively resolve $token strings inside spec props.
 // Strings starting with "$" → data[key] (or fallback "—").
 // Objects with { value: "$field", default: "..." } → resolved with fallback.
-function resolveSpecTokens(
+export function resolveSpecTokens(
   value: unknown,
   summary: string,
   data: Record<string, unknown>
 ): unknown {
   if (typeof value === "string") {
     if (value === "$summary") return summary || "—";
+    if (value === "$slot") return value;   // structural marker — never a data token
     // Only resolve $identifier tokens (valid JS identifier after $), not "$4.1M" etc.
     if (/^\$[a-zA-Z_][a-zA-Z0-9_]*$/.test(value)) {
       const raw = data[value.slice(1)];

@@ -31,6 +31,7 @@ interface FeedItem {
   cardType: string;
   summary?: string;
   workflowId?: string;
+  cardData?: Record<string, unknown>;
 }
 
 interface Props {
@@ -45,12 +46,14 @@ function DynamicToolSlot({
   lastQueryRef,
   setFeed,
   clearPending,
+  markToolCalled,
 }: {
   tool: CopilotTool;
   feedRef: React.RefObject<FeedItem[]>;
   lastQueryRef: React.RefObject<string>;
   setFeed: React.Dispatch<React.SetStateAction<FeedItem[]>>;
   clearPending: () => void;
+  markToolCalled: () => void;
 }) {
   useCopilotAction({
     name: tool.name,
@@ -59,11 +62,18 @@ function DynamicToolSlot({
     parameters: tool.parameters as any,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     handler: async (args: any) => {
+      // Mark before any awaits so the isLoading effect sees it in time
+      markToolCalled();
       clearPending();
-      const summary: string | undefined = args?.summary;
+      const { summary, ...rest } = args ?? {};
+      const cardData: Record<string, unknown> = rest;
+      // PaymentInitiation data lives entirely in the AI args — no investigation workflow needed
+      const needsWorkflow = tool.card_type !== "PaymentInitiation";
       const ctx = buildConversationContext(feedRef.current ?? []);
-      const workflowId = await startInvestigation(lastQueryRef.current, tool.card_type, ctx);
-      setFeed(f => [...f, { q: lastQueryRef.current, cardType: tool.card_type, summary, workflowId }]);
+      const workflowId = needsWorkflow
+        ? await startInvestigation(lastQueryRef.current, tool.card_type, ctx)
+        : undefined;
+      setFeed(f => [...f, { q: lastQueryRef.current, cardType: tool.card_type, summary, workflowId, cardData }]);
     },
   });
   return null;
@@ -85,6 +95,7 @@ export default function CopilotScreen({ persona }: Props) {
   const feedRef = useRef<FeedItem[]>(feed);
   feedRef.current = feed;
   const wasLoadingRef = useRef(false);
+  const toolCalledRef = useRef(false);
 
   // Fetch tools + card templates from Supabase once on mount
   useEffect(() => {
@@ -97,14 +108,21 @@ export default function CopilotScreen({ persona }: Props) {
   const { appendMessage, isLoading } = useCopilotChat();
   const effectiveThinking = isDemoMode ? thinking : isLoading;
 
-  // When loading finishes without a tool being called, add a stub so the query isn't lost
+  // When loading finishes without a tool being called, add a stub so the query isn't lost.
+  // toolCalledRef is set synchronously by DynamicToolSlot before any awaits, so the effect
+  // sees it even if isLoading flips in a different React batch than clearPending().
   useEffect(() => {
     if (isDemoMode) return;
     if (wasLoadingRef.current && !isLoading) {
-      setPendingQuery(prev => {
-        if (prev) setFeed(f => [...f, { q: prev, cardType: "stub" }]);
-        return null;
-      });
+      if (!toolCalledRef.current) {
+        setPendingQuery(prev => {
+          if (prev) setFeed(f => [...f, { q: prev, cardType: "stub" }]);
+          return null;
+        });
+      } else {
+        setPendingQuery(null);
+      }
+      toolCalledRef.current = false;
     }
     wasLoadingRef.current = isLoading;
   }, [isLoading]);
@@ -365,6 +383,7 @@ export default function CopilotScreen({ persona }: Props) {
                   cardType={item.cardType}
                   query={item.q}
                   template={templates[item.cardType]}
+                  initialCardData={item.cardData}
                 />
               : <GenericStubCard query={item.q} />
             }
@@ -425,6 +444,7 @@ export default function CopilotScreen({ persona }: Props) {
           lastQueryRef={lastQueryRef}
           setFeed={setFeed}
           clearPending={() => setPendingQuery(null)}
+          markToolCalled={() => { toolCalledRef.current = true; }}
         />
       ))}
     </div>

@@ -6,7 +6,7 @@ import {
   VisibilityProvider,
   ActionProvider,
 } from "@json-render/react";
-import { registry } from "@/lib/genui/registry";
+import { useDynamicRegistry } from "@/lib/genui/dynamicRegistry";
 import { buildLoadingSpec, buildResultSpec, buildPaymentSpec, buildSpecFromTemplate, type LynqxSpec } from "@/lib/genui/a2ui";
 import type { CardTemplate } from "@/lib/supabase";
 import { useWorkflowResult } from "@/lib/useWorkflowResult";
@@ -22,19 +22,34 @@ interface Props {
   cardType?: string;
   query?: string;
   template?: CardTemplate;   // from Supabase — takes priority over hardcoded buildResultSpec
+  initialCardData?: Record<string, unknown>;  // AI-extracted args; used before workflow data arrives
 }
 
-export default function A2UICard({ workflowId, summary, cardType, query, template }: Props) {
+export default function A2UICard({ workflowId, summary, cardType, query, template, initialCardData }: Props) {
+  const registry = useDynamicRegistry();
   const wf = useWorkflowResult(workflowId);
   const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>("idle");
   const [txRef, setTxRef] = useState<string | undefined>();
   const [paymentError, setPaymentError] = useState<string | undefined>();
 
   const spec = useMemo((): LynqxSpec | null => {
-    // No workflow yet — render card with defaults and the AI's summary
+    // PaymentInitiation always uses buildPaymentSpec (has interactive state buttons)
+    // regardless of workflowId or template — must check before the !workflowId early return
+    if (cardType === "PaymentInitiation" && !workflowId) {
+      const staticData = initialCardData ?? {};
+      return buildPaymentSpec(summary ?? "", staticData, {
+        workflowId: undefined,
+        submitPhase: paymentPhase,
+        txRef,
+        errorReason: paymentError,
+      });
+    }
+
+    // No workflow yet — render card with AI-extracted args and the AI's summary
     if (!workflowId) {
-      if (template) return buildSpecFromTemplate(template, summary ?? "", {});
-      if (cardType) return buildResultSpec(cardType, summary ?? "", {});
+      const staticData = initialCardData ?? {};
+      if (template) return buildSpecFromTemplate(template, summary ?? "", staticData);
+      if (cardType) return buildResultSpec(cardType, summary ?? "", staticData);
       return null;
     }
 
@@ -62,7 +77,10 @@ export default function A2UICard({ workflowId, summary, cardType, query, templat
     }
 
     const effectiveSummary = wf.summary ?? summary ?? "";
-    const data = (wf.cardData ?? {}) as Record<string, unknown>;
+    const wfData = wf.cardData as Record<string, unknown> | null | undefined;
+    // Prefer workflow data when it has content; fall back to AI-extracted args from the tool call
+    const hasWfData = wfData != null && Object.keys(wfData).length > 0;
+    const data = (hasWfData ? wfData : (initialCardData ?? {})) as Record<string, unknown>;
 
     if (cardType === "PaymentInitiation") {
       return buildPaymentSpec(effectiveSummary, data, {
@@ -79,7 +97,7 @@ export default function A2UICard({ workflowId, summary, cardType, query, templat
     }
 
     return buildResultSpec(cardType ?? "Generic", effectiveSummary, data);
-  }, [wf, workflowId, cardType, summary, paymentPhase, txRef, paymentError, template]);
+  }, [wf, workflowId, cardType, summary, paymentPhase, txRef, paymentError, template, initialCardData]);
 
   const stateRef = useRef<Record<string, unknown>>({});
   const setStateRef = useRef<SetState | undefined>(undefined);
