@@ -43,7 +43,7 @@ function buildRuntime() {
     return new CopilotRuntime({
       agents: {
         default: new BuiltInAgent({
-          model: `google/${process.env.GOOGLE_MODEL ?? "gemini-2.5-flash"}`,
+          model: `google/${process.env.GOOGLE_MODEL ?? "gemini-2.0-flash"}`,
           prompt: SYSTEM_PROMPT,
           forwardSystemMessages: true,
         }),

@@ -75,3 +75,61 @@ export interface InvestigationInput {
 }
 
 export type WorkspaceId = "exec" | "bank" | "dev";
+
+// A2UI message protocol types
+export interface A2UIComponent {
+  id: string;
+  component: Record<string, Record<string, unknown>>;
+}
+
+export interface A2UISurfaceUpdate {
+  surfaceId?: string;
+  components: A2UIComponent[];
+}
+
+export interface A2UIDataModelUpdate {
+  surfaceId?: string;
+  path?: string;
+  contents: Array<{
+    key: string;
+    valueString?: string;
+    valueNumber?: number;
+    valueBoolean?: boolean;
+    valueMap?: unknown[];
+  }>;
+}
+
+export interface A2UIBeginRendering {
+  surfaceId?: string;
+  root: string;
+  catalogId?: string;
+}
+
+export interface A2UIMessage {
+  workflowId: string;
+  surfaceUpdate?: A2UISurfaceUpdate;
+  dataModelUpdate?: A2UIDataModelUpdate;
+  beginRendering?: A2UIBeginRendering;
+  deleteSurface?: { surfaceId: string };
+}
+
+// Payment submission types
+export interface PaymentSubmitRequest {
+  workflowId: string;
+  paymentData: {
+    beneficiary: string;
+    beneficiaryBank?: string;
+    amount: number;
+    currency: string;
+    debitAccount: string;
+    reference: string;
+    rail: string;
+    deadline?: string;
+  };
+}
+
+export interface PaymentSubmitResponse {
+  txRef: string;
+  status: "accepted" | "rejected" | "processing";
+  reason?: string;
+}

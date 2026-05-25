@@ -5,7 +5,7 @@ let client: Client | null = null;
 async function getClient(): Promise<Client> {
   if (client) return client;
   const address = process.env.TEMPORAL_ADDRESS ?? "localhost:7233";
-  const connection = await Connection.connect({ address });
+  const connection = await Connection.connect({ address, connectTimeout: 2000 });
   client = new Client({ connection });
   return client;
 }

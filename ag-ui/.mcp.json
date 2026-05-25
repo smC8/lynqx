@@ -1,9 +1,10 @@
 {
   "mcpServers": {
-    "supabase": {
+     "supabase": {
       "type": "http",
-      "url": "https://mcp.supabase.com/mcp"
-    },
+      "url": "https://mcp.supabase.com/mcp?project_ref=flebmzmqqsnxorzfyoym"
+    }
+  },
     "next-devtools": {
       "command": "npx",
       "args": ["-y", "next-devtools-mcp@latest"]
